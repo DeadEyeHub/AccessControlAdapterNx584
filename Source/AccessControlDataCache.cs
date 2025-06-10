@@ -186,8 +186,8 @@ namespace AccessControlAdapterSample
 			foreach (var state in PossiblePartitionStates)
 				statesList.Add(new StateData { Id = state.Item1, Title = state.Item1, LocalizationId = state.Item2, Category = EntityData.PartitionCategoryName });
 
-			foreach (var state in PossibleOutputStates)
-				statesList.Add(new StateData { Id = state.Item1, Title = state.Item1, LocalizationId = state.Item2, Category = EntityData.OutputCategoryName });
+			//foreach (var state in PossibleOutputStates)
+			//	statesList.Add(new StateData { Id = state.Item1, Title = state.Item1, LocalizationId = state.Item2, Category = EntityData.OutputCategoryName });
 
 			return statesList;
 		}
@@ -199,39 +199,31 @@ namespace AccessControlAdapterSample
 
 
 
-		static readonly Tuple<string, string>[] PossibleDoorStates =
-			[
-				new Tuple<string, string>("opened", "#DoorStatusOpen"),
-				new Tuple<string, string>("closed", "#DoorStatusClosed"),
-				new Tuple<string, string>("unlocked", "#DoorStatusUnlocked"),
-				new Tuple<string, string>("locked", "#DoorStatusLocked")
-			];
+        static readonly Tuple<string, string>[] PossibleDoorStates =
+        [
+            new Tuple<string, string>("opened", "#DoorStatusOpen"),
+            new Tuple<string, string>("closed", "#DoorStatusClosed"),
+        ];
 
-		static readonly Tuple<string, string>[] PossibleZoneStates =
-			[
-				new Tuple<string, string>("zoneArmed", "#StatusArmed"),
-				new Tuple<string, string>("zoneDisarmed", ""),
-				new Tuple<string, string>("zoneReady", "#StatusReady"),
-				new Tuple<string, string>("zoneUnbypassed", "")
-			];
+        static readonly Tuple<string, string>[] PossibleZoneStates =
+        [
+            new Tuple<string, string>("zoneReady", "#StatusReady"),
+            new Tuple<string, string>("zoneBypassed", "")
+        ];
 
-		static readonly Tuple<string, string>[] PossiblePartitionStates =
-			[
-				new Tuple<string, string>("partitionArmed", "#StatusArmed"),
-				new Tuple<string, string>("partitionDisarmed", ""),
-				new Tuple<string, string>("partitionInAlarm", "#StatusAlarmed"),
-				new Tuple<string, string>("partitionReady", "#StatusReady")
-			];
+        static readonly Tuple<string, string>[] PossiblePartitionStates =
+        [
+            new Tuple<string, string>("partitionArmed", "#StatusArmed"),
+            new Tuple<string, string>("partitionDisarmed", ""),
+            new Tuple<string, string>("partitionInAlarm", "#StatusAlarmed"),
+            new Tuple<string, string>("partitionReady", "#StatusReady")
+        ];
 
-		static readonly Tuple<string, string>[] PossibleOutputStates =
-			[
-				new Tuple<string, string>("outputActivated", "#StatusActivated"),
-				new Tuple<string, string>("outputDeactivated", "#StatusDeactivated")
-			];
+        static readonly Tuple<string, string>[] PossibleOutputStates =
+        [
+        ];
 
-
-
-		static AccessControlDataCache()
+        static AccessControlDataCache()
 		{
 			Instance = new AccessControlDataCache();
 		}

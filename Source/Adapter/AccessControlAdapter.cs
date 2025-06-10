@@ -25,59 +25,60 @@ namespace AccessControlAdapterSample.Adapter
 		{
 			var itemsMap = new Dictionary<string, ItemData>();
 
-			var doors = RequestDataArray<DoorData>("/doors");
-			foreach (var door in doors)
-				if (door.Id != null)
-					itemsMap[door.Id] = CreateDoorItem(door);
+			//var doors = RequestDataArray<DoorData>("/doors");
+			//foreach (var door in doors)
+			//	if (door.Id != null)
+			//		itemsMap[door.Id] = CreateDoorItem(door);
 
-			var zones = RequestDataArray<ZoneData>("/zones");
-			foreach (var zone in zones)
-				if (zone.Id != null)
-					itemsMap[zone.Id] = CreateZoneItem(zone);
+			var zonesJson = RequestJson("/zones");
+            var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, List<ZoneData>>>(zonesJson);
+            List<ZoneData> zones = jsonObject["zones"];
+            foreach (var zone in zones)
+				itemsMap[zone.Number.ToString()] = CreateZoneItem(zone);
 
-			var partitions = RequestDataArray<PartitionData>("/partitions");
-			foreach (var partition in partitions)
-				if (partition.Id != null)
-					itemsMap[partition.Id] = CreatePartitionItem(partition);
+			//var partitions = RequestDataArray<PartitionData>("/partitions");
+			//foreach (var partition in partitions)
+			//	if (partition.Id != null)
+			//		itemsMap[partition.Id] = CreatePartitionItem(partition);
 
-			var outputs = RequestDataArray<OutputData>("/outputs");
-			foreach (var output in outputs)
-				if (output.Id != null)
-					itemsMap[output.Id] = CreateOutputItem(output);
+			//var outputs = RequestDataArray<OutputData>("/outputs");
+			//foreach (var output in outputs)
+			//	if (output.Id != null)
+			//		itemsMap[output.Id] = CreateOutputItem(output);
 
 			return itemsMap;
 		}
 
 		public Dictionary<string, UserData> GetUsers()
 		{
-			var cardHolders = RequestDataArray<CardHolderData>("/cardholders");
+			//var cardHolders = RequestDataArray<CardHolderData>("/cardholders");
 
 			var usersMap = new Dictionary<string, UserData>();
-			foreach (var cardHolder in cardHolders)
-			{
-				if (cardHolder.Id == null)
-					continue;
+			//foreach (var cardHolder in cardHolders)
+			//{
+			//	if (cardHolder.Id == null)
+			//		continue;
 
-				var user = CreateUser(cardHolder);
-				usersMap[cardHolder.Id] = user;
-			}
+			//	var user = CreateUser(cardHolder);
+			//	usersMap[cardHolder.Id] = user;
+			//}
 
 			return usersMap;
 		}
 
 		public Dictionary<string, EventData> GetEvents()
 		{
-			var events = RequestDataArray<EventDescData>("/events");
+			//var events = RequestDataArray<EventDescData>("/events");
 
 			var eventsMap = new Dictionary<string, EventData>();
-			foreach (var e in events)
-			{
-				if (e.Id == null)
-					continue;
+			//foreach (var e in events)
+			//{
+			//	if (e.Id == null)
+			//		continue;
 
-				var eventData = CreateEvent(e);
-				eventsMap[e.Id] = eventData;
-			}
+			//	var eventData = CreateEvent(e);
+			//	eventsMap[e.Id] = eventData;
+			//}
 
 			return eventsMap;
 		}
@@ -104,122 +105,123 @@ namespace AccessControlAdapterSample.Adapter
 
 		public void FireAccessControlEvents()
 		{
-			var firedEvents = RequestDataArray<FireEventData>("/fired_events");
+			//var firedEvents = RequestDataArray<FireEventData>("/fired_events");
 
 			// Fire received events
-			foreach (var firedEvent in firedEvents)
-			{
-				var eventDesc = AccessControlDataCache.Instance.GetEvent(firedEvent.EventId);
-				if (eventDesc == null)
-					continue; // Can't find event description with specified id
+			//foreach (var firedEvent in firedEvents)
+			//{
+			//	var eventDesc = AccessControlDataCache.Instance.GetEvent(firedEvent.EventId);
+			//	if (eventDesc == null)
+			//		continue; // Can't find event description with specified id
 
-				var eventData = new NotificationData.EventData();
+			//	var eventData = new NotificationData.EventData();
 
-				eventData.Id = Guid.NewGuid().ToString();
-				eventData.EventDescriptionId = firedEvent.EventId;
-				eventData.EventText = eventDesc.Description;
-				eventData.UtcTime = firedEvent.UtcTime;
+			//	eventData.Id = Guid.NewGuid().ToString();
+			//	eventData.EventDescriptionId = firedEvent.EventId;
+			//	eventData.EventText = eventDesc.Description;
+			//	eventData.UtcTime = firedEvent.UtcTime;
 
-				var item = AccessControlDataCache.Instance.GetItem(firedEvent.ObjectType, firedEvent.ObjectId);
-				if (null != item)
-				{
-					eventData.ObjectId = item.Id;
-					eventData.ObjectType = item.Category;
-				}
-				else
-				{
-					eventData.ObjectId = "";
-					eventData.ObjectType = EntityData.SystemCategoryName;
-				}
+			//	var item = AccessControlDataCache.Instance.GetItem(firedEvent.ObjectType, firedEvent.ObjectId);
+			//	if (null != item)
+			//	{
+			//		eventData.ObjectId = item.Id;
+			//		eventData.ObjectType = item.Category;
+			//	}
+			//	else
+			//	{
+			//		eventData.ObjectId = "";
+			//		eventData.ObjectType = EntityData.SystemCategoryName;
+			//	}
 
-				var user = AccessControlDataCache.Instance.GetUser(firedEvent.CardHolderId);
-				if (user != null)
-				{
-					eventData.ActorId = user.Id;
-					eventData.ActorType = EntityData.UserCategoryName;
-					eventData.Cards = new List<string>(user.Cards);
-				}
+			//	var user = AccessControlDataCache.Instance.GetUser(firedEvent.CardHolderId);
+			//	if (user != null)
+			//	{
+			//		eventData.ActorId = user.Id;
+			//		eventData.ActorType = EntityData.UserCategoryName;
+			//		eventData.Cards = new List<string>(user.Cards);
+			//	}
 
-				_notificationsManager.PushEventDataNotification(eventData);
-			}
+			//	_notificationsManager.PushEventDataNotification(eventData);
+			//}
 		}
 
 		public bool ExecuteSystemAction(ActionData actionData, Dictionary<string, string> actionParams, out string errorMessage)
 		{
-			string requestPath;
-			if (actionData.Id == "systemAction")
-				requestPath = "/system_action";
-			else
-			{
-				errorMessage = $"No execution steps was specified for the system action '{actionData.Title}'.";
-				Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
+			//string requestPath;
+			//if (actionData.Id == "systemAction")
+			//	requestPath = "/system_action";
+			//else
+			//{
+			//	errorMessage = $"No execution steps was specified for the system action '{actionData.Title}'.";
+			//	Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
 
-				return false;
-			}
+			//	return false;
+			//}
 
-			var response = SendActionRequest(requestPath, actionParams);
-			if (response.StatusCode == HttpStatusCode.OK)
-			{
-				errorMessage = "";
-				Logging.Logger.Log(NLog.LogLevel.Debug, $"System action '{actionData.Title}' was triggered successfully.");
+			//var response = SendActionRequest(requestPath, actionParams);
+			//if (response.StatusCode == HttpStatusCode.OK)
+			//{
+			//	errorMessage = "";
+			//	Logging.Logger.Log(NLog.LogLevel.Debug, $"System action '{actionData.Title}' was triggered successfully.");
 
-				return true;
-			}
+			//	return true;
+			//}
 
-			errorMessage =
-				$"Failed to trigger the system action '{actionData.Title}' with error code = {response.StatusCode}.";
-			Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
+			//errorMessage =
+			//	$"Failed to trigger the system action '{actionData.Title}' with error code = {response.StatusCode}.";
+			//Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
 
-			return false;
+			errorMessage = "System actions are not supported in this adapter version.";
+            return false;
 		}
 
 		public bool ExecuteItemAction(ActionData actionData, ItemData itemData, Dictionary<string, string> actionParams, out string errorMessage)
 		{
-			string requestPath;
-			if (actionData.Id == "partitionArm")
-				requestPath = $"/partition/{itemData.Id}/arm";
-			else if (actionData.Id == "partitionDisarm")
-				requestPath = $"/partition/{itemData.Id}/disarm";
-			else if (actionData.Id == "doorLock")
-				requestPath = $"/door/{itemData.Id}/lock";
-			else if (actionData.Id == "doorUnlock")
-				requestPath = $"/door/{itemData.Id}/unlock";
-			else
-			{
-				errorMessage = $"No execution steps was specified for the action '{actionData.Title}' for item '{itemData.Title}'.";
-				Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
-				return false;
-			}
+            //string requestPath;
+            //if (actionData.Id == "partitionArm")
+            //	requestPath = $"/partition/{itemData.Id}/arm";
+            //else if (actionData.Id == "partitionDisarm")
+            //	requestPath = $"/partition/{itemData.Id}/disarm";
+            //else if (actionData.Id == "doorLock")
+            //	requestPath = $"/door/{itemData.Id}/lock";
+            //else if (actionData.Id == "doorUnlock")
+            //	requestPath = $"/door/{itemData.Id}/unlock";
+            //else
+            //{
+            //	errorMessage = $"No execution steps was specified for the action '{actionData.Title}' for item '{itemData.Title}'.";
+            //	Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
+            //	return false;
+            //}
 
-			var response = SendActionRequest(requestPath, actionParams);
-			if (response.StatusCode == HttpStatusCode.OK)
-			{
-				using (var stream = response.Content.ReadAsStream())
-				{
-					var buffer = new byte[stream.Length];
-					var bytesRead = stream.Read(buffer, 0, buffer.Length);
-					if (bytesRead != buffer.Length)
-					{
-						errorMessage =
-							$"Trigger the action '{actionData.Title}' for item '{itemData.Title}' response read error. Was read {bytesRead} instead of {buffer.Length} bytes.";
-						Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
+            //var response = SendActionRequest(requestPath, actionParams);
+            //if (response.StatusCode == HttpStatusCode.OK)
+            //{
+            //	using (var stream = response.Content.ReadAsStream())
+            //	{
+            //		var buffer = new byte[stream.Length];
+            //		var bytesRead = stream.Read(buffer, 0, buffer.Length);
+            //		if (bytesRead != buffer.Length)
+            //		{
+            //			errorMessage =
+            //				$"Trigger the action '{actionData.Title}' for item '{itemData.Title}' response read error. Was read {bytesRead} instead of {buffer.Length} bytes.";
+            //			Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
 
-						return false;
-					}
+            //			return false;
+            //		}
 
-					var json = Encoding.UTF8.GetString(buffer);
-					UpdateItemData(json, itemData);
+            //		var json = Encoding.UTF8.GetString(buffer);
+            //		UpdateItemData(json, itemData);
 
-					errorMessage = "";
+            //		errorMessage = "";
 
-					return true;
-				}
-			}
+            //		return true;
+            //	}
+            //}
 
-			errorMessage = $"Failed to trigger the action '{actionData.Title}' for item '{itemData.Title}' with error code = {response.StatusCode}.";
-			Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
-
-			return false;
+            //errorMessage = $"Failed to trigger the action '{actionData.Title}' for item '{itemData.Title}' with error code = {response.StatusCode}.";
+            //Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
+            errorMessage = "System actions are not supported in this adapter version.";
+            return false;
 		}
 
 		#endregion
@@ -246,7 +248,11 @@ namespace AccessControlAdapterSample.Adapter
 								var json = Encoding.UTF8.GetString(buffer);
 								var dataList = JsonConvert.DeserializeObject<List<T>>(json);
 
-								return dataList?.ToArray() ?? [];
+                                var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, List<ZoneData>>>(json);
+                                List<ZoneData> zones = jsonObject["zones"];
+
+
+                                return dataList?.ToArray() ?? [];
 							}
 						}
 					}
@@ -260,7 +266,38 @@ namespace AccessControlAdapterSample.Adapter
 			return [];
 		}
 
-		HttpResponseMessage SendActionRequest(string requestPath, Dictionary<string, string> actionParams)
+        string RequestJson(string requestPath)
+        {
+            try
+            {
+                using (var message = new HttpRequestMessage(HttpMethod.Get, new Uri(_accessControlAddress, requestPath)))
+                {
+                    using (var response = _httpClient.Send(message))
+                    {
+                        if (response.StatusCode == HttpStatusCode.OK)
+                        {
+                            using (var stream = response.Content.ReadAsStream())
+                            {
+                                var buffer = new byte[stream.Length];
+                                var bytesRead = stream.Read(buffer, 0, buffer.Length);
+                                if (bytesRead != buffer.Length)
+                                    throw new Exception($"Failed to read data stream. Was read {bytesRead} instead of {buffer.Length} bytes.");
+
+                                var json = Encoding.UTF8.GetString(buffer);
+								return json;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logging.Logger.Log(LogLevel.Error, $"RequestDataArray exception was caught: '{ex.Message}'");
+            }
+
+            return string.Empty;
+        }
+        HttpResponseMessage SendActionRequest(string requestPath, Dictionary<string, string> actionParams)
 		{
 			try
 			{
@@ -300,15 +337,14 @@ namespace AccessControlAdapterSample.Adapter
 
 		ItemData CreateZoneItem(ZoneData zone)
 		{
-			var item = new ItemData(EntityData.DataType.Zone) { Title = zone.Title, Id = zone.Id };
+			var item = new ItemData(EntityData.DataType.Zone) { Title = zone.Name, Id = zone.Number.ToString() };
 
 			foreach (var state in PossibleZoneStates)
 				item.States[state.Item1] = false;
 
-			foreach (var state in zone.States)
-				item.States[state] = true;
-
-			return item;
+			item.States["zoneBypassed"] = zone.Bypassed;
+            item.States["zoneReady"] = !zone.State;
+            return item;
 		}
 
 		ItemData CreatePartitionItem(PartitionData partition)
@@ -471,16 +507,12 @@ namespace AccessControlAdapterSample.Adapter
 		[
 			new Tuple<string, string>("opened", "#DoorStatusOpen"),
 			new Tuple<string, string>("closed", "#DoorStatusClosed"),
-			new Tuple<string, string>("unlocked", "#DoorStatusUnlocked"),
-			new Tuple<string, string>("locked", "#DoorStatusLocked")
 		];
 
 		static readonly Tuple<string, string>[] PossibleZoneStates =
 		[
-			new Tuple<string, string>("zoneArmed", "#StatusArmed"),
-			new Tuple<string, string>("zoneDisarmed", ""),
 			new Tuple<string, string>("zoneReady", "#StatusReady"),
-			new Tuple<string, string>("zoneUnbypassed", "")
+			new Tuple<string, string>("zoneBypassed", "")
 		];
 
 		static readonly Tuple<string, string>[] PossiblePartitionStates =
@@ -493,8 +525,6 @@ namespace AccessControlAdapterSample.Adapter
 
 		static readonly Tuple<string, string>[] PossibleOutputStates =
 		[
-			new Tuple<string, string>("outputActivated", "#StatusActivated"),
-			new Tuple<string, string>("outputDeactivated", "#StatusDeactivated")
 		];
 	}
 }

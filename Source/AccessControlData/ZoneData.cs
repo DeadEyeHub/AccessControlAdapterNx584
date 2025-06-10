@@ -2,15 +2,24 @@
 
 namespace AccessControlAdapterSample.AccessControlData
 {
-	class ZoneData
-	{
-		[JsonProperty("id")]
-		public string? Id { get; set; }
+    class ZoneData
+    {
+        [JsonProperty("number")]
+        public int Number { get; set; }
 
-		[JsonProperty("title")]
-		public string? Title { get; set; }
+        [JsonProperty("name")]
+        public string? Name { get; set; }
 
-		[JsonProperty("states")]
-		public string[] States { get; set; } = [];
-	}
+        [JsonProperty("state")]
+        public bool State { get; set; }
+
+        [JsonProperty("bypassed")]
+        public bool Bypassed { get; set; }
+
+        [JsonProperty("condition_flags")]
+        public string[]? ConditionFlags { get; set; }
+
+        [JsonProperty("type_flags", Required = Required.Always)]
+        public string[] TypeFlags { get; set; } = [];
+    }
 }
