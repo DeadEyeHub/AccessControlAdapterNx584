@@ -344,6 +344,8 @@ namespace AccessControlAdapterSample.Adapter
 
 			item.States["zoneBypassed"] = zone.Bypassed;
             item.States["zoneReady"] = !zone.State;
+            item.ConditionFlags = zone.ConditionFlags;
+            item.TypeFlags = zone.TypeFlags;
             return item;
 		}
 

@@ -19,10 +19,16 @@ namespace AccessControlAdapterSample.AdapterData
 
 		[JsonProperty("states", Order = 4)]
 		public Dictionary<string, bool?> States { get; set; } = new Dictionary<string, bool?>();
+        
+		[JsonProperty("conditionFlags", Order = 5)]
+        public string[] ConditionFlags { get; set; } = [];
+
+        [JsonProperty("typeFlags", Order = 6)]
+        public string[] TypeFlags { get; set; } = [];
 
 
 
-		public object Clone()
+        public object Clone()
 		{
 			var result = new ItemData(Type);
 
