@@ -17,9 +17,9 @@ namespace AccessControlAdapterSample.AccessControlData
         public bool Bypassed { get; set; }
 
         [JsonProperty("condition_flags")]
-        public string[]? ConditionFlags { get; set; }
+        public HashSet<string>? ConditionFlags { get; set; }
 
         [JsonProperty("type_flags", Required = Required.Always)]
-        public string[] TypeFlags { get; set; } = [];
+        public HashSet<string>? TypeFlags { get; set; } = [];
     }
 }
