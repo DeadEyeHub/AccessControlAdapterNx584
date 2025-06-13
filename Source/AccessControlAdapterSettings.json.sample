@@ -1,0 +1,12 @@
+{
+  "logLevel": "trace",
+  "logFile": "AccessControlAdapter.log",
+  "accessControlHost": "10.10.71.15",
+  "accessControlPort": "5007",
+  "accessControlAdapterHttpPort": "9000",
+  "accessControlAdapterHttpsPort": "8101",
+  "useHttpsServer": "false",
+  "accessControlAdapterIntegrationId": "1234",
+  "accessControlPollTimeout": "5000",
+  "responsePageSize": "10"
+}

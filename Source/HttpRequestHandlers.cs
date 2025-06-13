@@ -291,7 +291,7 @@ namespace AccessControlAdapterSample
 			var actionsCount = GetMaxCount((uint)actions.Count, offset, _responsePageSize);
 
 			if (actionsCount > 0)
-				responseData.Data = actions.ToList().GetRange((int)offset, (int)actionsCount);
+				responseData.Data = actions.Values.ToList().GetRange((int)offset, (int)actionsCount);
 
 			if (actions.Count > 1)
 				responseData.NextPage = actions.Count > offset + actionsCount;
@@ -332,7 +332,7 @@ namespace AccessControlAdapterSample
 			var parametersCount = GetMaxCount((uint)parameters.Count, offset, _responsePageSize);
 
 			if (parametersCount > 0)
-				responseData.Data = parameters.ToList().GetRange((int)offset, (int)parametersCount);
+				responseData.Data = parameters.Values.ToList().GetRange((int)offset, (int)parametersCount);
 
 			if (parameters.Count > 1)
 				responseData.NextPage = parameters.Count > offset + parametersCount;

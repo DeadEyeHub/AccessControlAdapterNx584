@@ -1,6 +1,7 @@
 ﻿using AccessControlAdapterSample.AccessControlData;
 using AccessControlAdapterSample.AdapterData;
 using Newtonsoft.Json;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Text;
 using LogLevel = NLog.LogLevel;
@@ -25,23 +26,30 @@ namespace AccessControlAdapterSample.Adapter
 		{
 			var itemsMap = new Dictionary<string, ItemData>();
 
-			//var doors = RequestDataArray<DoorData>("/doors");
-			//foreach (var door in doors)
-			//	if (door.Id != null)
-			//		itemsMap[door.Id] = CreateDoorItem(door);
-
 			var zonesJson = RequestJson("/zones");
             var jsonZoneObject = JsonConvert.DeserializeObject<Dictionary<string, List<ZoneData>>>(zonesJson);
-            List<ZoneData> zones = jsonZoneObject["zones"]; 
+            List<ZoneData> zones = jsonZoneObject["zones"];
             foreach (var zone in zones)
-				itemsMap[zone.Number.ToString()] = CreateZoneItem(zone);
-
+			{
+				var item = CreateZoneItem(zone);	
+				if (item != null)
+					itemsMap[item.Id] = item;
+			}            
+			foreach (var zone in zones) 
+			{ 
+				var item = CreateDoorItem(zone);
+				if (item != null)
+                    itemsMap[item.Id] = item;
+            }
             var partitionsJson = RequestJson("/partitions");
             var jsonPatritionObject = JsonConvert.DeserializeObject<Dictionary<string, List<PartitionData>>>(partitionsJson);
             List<PartitionData> partitions = jsonPatritionObject["partitions"];
             foreach (var partition in partitions)
-                itemsMap[partition.Number.ToString()] = CreatePartitionItem(partition);
-
+{
+				var item = CreatePartitionItem(partition);
+				if (item != null)
+					itemsMap[item.Id] = item;
+            }
             //var partitions = RequestDataArray<PartitionData>("/partitions");
             //foreach (var partition in partitions)
             //	if (partition.Id != null)
@@ -183,50 +191,59 @@ namespace AccessControlAdapterSample.Adapter
 
 		public bool ExecuteItemAction(ActionData actionData, ItemData itemData, Dictionary<string, string> actionParams, out string errorMessage)
 		{
-            //string requestPath;
-            //if (actionData.Id == "partitionArm")
-            //	requestPath = $"/partition/{itemData.Id}/arm";
-            //else if (actionData.Id == "partitionDisarm")
-            //	requestPath = $"/partition/{itemData.Id}/disarm";
+            string requestPath;
+            if (actionData.Id == "partitionArm")
+            	requestPath = $"/command?cmd=arm&type=stay";
+			else if (actionData.Id == "partitionDisarm")
+			{
+				if (actionParams.TryGetValue("pin", out var masterPin))
+					requestPath = $"/command?cmd=disarm&master_pin={masterPin}";
+                else
+                {
+                    errorMessage = $"Invalid pin.";
+                    Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
+                    return false;
+                }
+            }
             //else if (actionData.Id == "doorLock")
             //	requestPath = $"/door/{itemData.Id}/lock";
             //else if (actionData.Id == "doorUnlock")
             //	requestPath = $"/door/{itemData.Id}/unlock";
-            //else
-            //{
-            //	errorMessage = $"No execution steps was specified for the action '{actionData.Title}' for item '{itemData.Title}'.";
-            //	Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
-            //	return false;
-            //}
+            else
+			{
+				errorMessage = $"No execution steps was specified for the action '{actionData.Title}' for item '{itemData.Title}'.";
+				Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
+				return false;
+			}
 
-            //var response = SendActionRequest(requestPath, actionParams);
-            //if (response.StatusCode == HttpStatusCode.OK)
-            //{
-            //	using (var stream = response.Content.ReadAsStream())
-            //	{
-            //		var buffer = new byte[stream.Length];
-            //		var bytesRead = stream.Read(buffer, 0, buffer.Length);
-            //		if (bytesRead != buffer.Length)
-            //		{
-            //			errorMessage =
-            //				$"Trigger the action '{actionData.Title}' for item '{itemData.Title}' response read error. Was read {bytesRead} instead of {buffer.Length} bytes.";
-            //			Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
+			var response = SendActionRequest(requestPath);
+			if (response.StatusCode == HttpStatusCode.OK)
+			{
+				using (var stream = response.Content.ReadAsStream())
+				{
+					var buffer = new byte[stream.Length];
+					var bytesRead = stream.Read(buffer, 0, buffer.Length);
+					if (bytesRead != buffer.Length)
+					{
+						errorMessage =
+							$"Trigger the action '{actionData.Title}' for item '{itemData.Title}' response read error. Was read {bytesRead} instead of {buffer.Length} bytes.";
+						Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
 
-            //			return false;
-            //		}
+						return false;
+					}
 
-            //		var json = Encoding.UTF8.GetString(buffer);
-            //		UpdateItemData(json, itemData);
+					var json = Encoding.UTF8.GetString(buffer);
+					UpdateItemData(json, itemData);
 
-            //		errorMessage = "";
+					errorMessage = "";
 
-            //		return true;
-            //	}
-            //}
+					return true;
+				}
+			}
 
-            //errorMessage = $"Failed to trigger the action '{actionData.Title}' for item '{itemData.Title}' with error code = {response.StatusCode}.";
-            //Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
-            errorMessage = "System actions are not supported in this adapter version.";
+			errorMessage = $"Failed to trigger the action '{actionData.Title}' for item '{itemData.Title}' with error code = {response.StatusCode}.";
+			Logging.Logger.Log(NLog.LogLevel.Error, errorMessage);
+			errorMessage = "System actions are not supported in this adapter version.";
             return false;
 		}
 
@@ -303,19 +320,14 @@ namespace AccessControlAdapterSample.Adapter
 
             return string.Empty;
         }
-        HttpResponseMessage SendActionRequest(string requestPath, Dictionary<string, string> actionParams)
+        HttpResponseMessage SendActionRequest(string requestPath)
 		{
 			try
 			{
 				var requestPathWithParameters = requestPath;
-				if (actionParams.Any())
-				{
-					requestPathWithParameters += "?";
-					foreach (var param in actionParams)
-						requestPathWithParameters += $"{param.Key}={param.Value}";
-				}
+				
 
-				using (var message = new HttpRequestMessage(HttpMethod.Post, new Uri(_accessControlAddress, requestPathWithParameters)))
+				using (var message = new HttpRequestMessage(HttpMethod.Get, new Uri(_accessControlAddress, requestPathWithParameters)))
 				{
 					return _httpClient.Send(message);
 				}
@@ -328,22 +340,28 @@ namespace AccessControlAdapterSample.Adapter
 			return new HttpResponseMessage(HttpStatusCode.InternalServerError);
 		}
 
-		ItemData CreateDoorItem(DoorData door)
+		ItemData CreateDoorItem(ZoneData zone)
 		{
-			var item = new ItemData(EntityData.DataType.Door) { Title = door.Title, Id = door.Id };
 
-			foreach (var state in PossibleDoorStates)
-				item.States[state.Item1] = false;
+            if (zone.TypeFlags != null && zone.TypeFlags.Contains("Chime"))
+            {
+                var item = new ItemData(EntityData.DataType.Door) { Id = "D"+zone.Number.ToString(), Title = zone.Name };
 
-			foreach (var state in door.States)
-				item.States[state] = true;
+                foreach (var state in PossibleDoorStates)
+                    item.States[state.Item1] = false;
 
-			return item;
+                item.States["opened"] = zone.State;
+                item.States["closed"] = !zone.State;
+                return item;
+            }
+
+
+            return null;
 		}
 
 		ItemData CreateZoneItem(ZoneData zone)
 		{
-			var item = new ItemData(EntityData.DataType.Zone) {Id = zone.Number.ToString(), Title = zone.Name };
+			var item = new ItemData(EntityData.DataType.Zone) {Id = "Z"+zone.Number.ToString(), Title = zone.Name};
 
 			foreach (var state in PossibleZoneStates)
 				item.States[state.Item1] = false;
@@ -355,29 +373,22 @@ namespace AccessControlAdapterSample.Adapter
 
 		ItemData CreatePartitionItem(PartitionData partition)
 		{
-			var item = new ItemData(EntityData.DataType.Partition) {Id = partition.Number.ToString(), Title = partition.Number.ToString() };
+			var item = new ItemData(EntityData.DataType.Partition) {Id = "P"+partition.Number.ToString(), Title = partition.Number.ToString() };
 
 			foreach (var state in PossiblePartitionStates)
 				item.States[state.Item1] = false;
             item.States["partitionArmed"] = partition.Armed;
-            if (partition.ConditionFlags != null && partition.ConditionFlags.Contains("Chime mode on"))
-            {
-                item.States["chimeModeOn"] = true;
-            }
-
-            return item;
-		}
-
-		ItemData CreateOutputItem(OutputData output)
-		{
-			var item = new ItemData(EntityData.DataType.Output) { Title = output.Title, Id = output.Id };
-
-			foreach (var state in PossibleOutputStates)
-				item.States[state.Item1] = false;
-
-			foreach (var state in output.States)
-				item.States[state] = true;
-
+            if (partition.ConditionFlags != null)
+			{	
+				if(partition.ConditionFlags.Contains("Chime mode on"))
+				{
+					item.States["chimeModeOn"] = true;
+				}
+				if (partition.ConditionFlags.Contains("Ready to arm"))
+				{
+					item.States["readyToArm"] = true;
+				}
+			}
 			return item;
 		}
 
@@ -421,7 +432,6 @@ namespace AccessControlAdapterSample.Adapter
 				Title = "Arm",
 				LocalizationId = "#PartitionActionArm",
 				Category = EntityData.PartitionCategoryName,
-				Params = ["pin"]
 			};
 
 			var partitionDisarm = new ActionData
@@ -472,8 +482,8 @@ namespace AccessControlAdapterSample.Adapter
 			if (itemData.Type == EntityData.DataType.Door)
 			{
 				var newDoorData = JsonConvert.DeserializeObject<DoorData>(json);
-				if (newDoorData != null)
-					AccessControlDataCache.Instance.UpdateItem(CreateDoorItem(newDoorData), _notificationsManager);
+				//if (newDoorData != null)
+					//AccessControlDataCache.Instance.UpdateItem(CreateDoorItem(newDoorData), _notificationsManager);
 			}
 			else if (itemData.Type == EntityData.DataType.Zone)
 			{
@@ -486,12 +496,6 @@ namespace AccessControlAdapterSample.Adapter
 				var newPartitionData = JsonConvert.DeserializeObject<PartitionData>(json);
 				if (newPartitionData != null)
 					AccessControlDataCache.Instance.UpdateItem(CreatePartitionItem(newPartitionData), _notificationsManager);
-			}
-			else if (itemData.Type == EntityData.DataType.Output)
-			{
-				var newOutputData = JsonConvert.DeserializeObject<OutputData>(json);
-				if (newOutputData != null)
-					AccessControlDataCache.Instance.UpdateItem(CreateOutputItem(newOutputData), _notificationsManager);
 			}
 			else if (itemData.Type == EntityData.DataType.User)
 			{

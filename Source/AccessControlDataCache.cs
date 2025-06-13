@@ -215,6 +215,7 @@ namespace AccessControlAdapterSample
         [
             new Tuple<string, string>("partitionArmed", "#StatusArmed"),
             new Tuple<string, string>("chimeModeOn", ""),
+            new Tuple<string, string>("readyToArm", "")
         ];
 
         static readonly Tuple<string, string>[] PossibleOutputStates =

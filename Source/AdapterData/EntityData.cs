@@ -31,7 +31,7 @@ namespace AccessControlAdapterSample.AdapterData
 		public DataType Type;
 
 		[JsonProperty("id", Order = 1)]
-		public string? Id { get; set; }
+		public string Id { get; set; }
 
 		[JsonProperty("utcTime", Order = 10)]
 		public long? UtcTime { get; set; }
