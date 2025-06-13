@@ -31,22 +31,28 @@ namespace AccessControlAdapterSample.Adapter
 			//		itemsMap[door.Id] = CreateDoorItem(door);
 
 			var zonesJson = RequestJson("/zones");
-            var jsonObject = JsonConvert.DeserializeObject<Dictionary<string, List<ZoneData>>>(zonesJson);
-            List<ZoneData> zones = jsonObject["zones"];
+            var jsonZoneObject = JsonConvert.DeserializeObject<Dictionary<string, List<ZoneData>>>(zonesJson);
+            List<ZoneData> zones = jsonZoneObject["zones"]; 
             foreach (var zone in zones)
 				itemsMap[zone.Number.ToString()] = CreateZoneItem(zone);
 
-			//var partitions = RequestDataArray<PartitionData>("/partitions");
-			//foreach (var partition in partitions)
-			//	if (partition.Id != null)
-			//		itemsMap[partition.Id] = CreatePartitionItem(partition);
+            var partitionsJson = RequestJson("/partitions");
+            var jsonPatritionObject = JsonConvert.DeserializeObject<Dictionary<string, List<PartitionData>>>(partitionsJson);
+            List<PartitionData> partitions = jsonPatritionObject["partitions"];
+            foreach (var partition in partitions)
+                itemsMap[partition.Number.ToString()] = CreatePartitionItem(partition);
 
-			//var outputs = RequestDataArray<OutputData>("/outputs");
-			//foreach (var output in outputs)
-			//	if (output.Id != null)
-			//		itemsMap[output.Id] = CreateOutputItem(output);
+            //var partitions = RequestDataArray<PartitionData>("/partitions");
+            //foreach (var partition in partitions)
+            //	if (partition.Id != null)
+            //		itemsMap[partition.Id] = CreatePartitionItem(partition);
 
-			return itemsMap;
+            //var outputs = RequestDataArray<OutputData>("/outputs");
+            //foreach (var output in outputs)
+            //	if (output.Id != null)
+            //		itemsMap[output.Id] = CreateOutputItem(output);
+
+            return itemsMap;
 		}
 
 		public Dictionary<string, UserData> GetUsers()
@@ -337,29 +343,29 @@ namespace AccessControlAdapterSample.Adapter
 
 		ItemData CreateZoneItem(ZoneData zone)
 		{
-			var item = new ItemData(EntityData.DataType.Zone) { Title = zone.Name, Id = zone.Number.ToString() };
+			var item = new ItemData(EntityData.DataType.Zone) {Id = zone.Number.ToString(), Title = zone.Name };
 
 			foreach (var state in PossibleZoneStates)
 				item.States[state.Item1] = false;
 
 			item.States["zoneBypassed"] = zone.Bypassed;
             item.States["zoneReady"] = !zone.State;
-            item.ConditionFlags = zone.ConditionFlags;
-            item.TypeFlags = zone.TypeFlags;
             return item;
 		}
 
 		ItemData CreatePartitionItem(PartitionData partition)
 		{
-			var item = new ItemData(EntityData.DataType.Partition) { Title = partition.Title, Id = partition.Id };
+			var item = new ItemData(EntityData.DataType.Partition) {Id = partition.Number.ToString(), Title = partition.Number.ToString() };
 
 			foreach (var state in PossiblePartitionStates)
 				item.States[state.Item1] = false;
+            item.States["partitionArmed"] = partition.Armed;
+            if (partition.ConditionFlags != null && partition.ConditionFlags.Contains("Chime mode on"))
+            {
+                item.States["chimeModeOn"] = true;
+            }
 
-			foreach (var state in partition.States)
-				item.States[state] = true;
-
-			return item;
+            return item;
 		}
 
 		ItemData CreateOutputItem(OutputData output)
@@ -520,9 +526,7 @@ namespace AccessControlAdapterSample.Adapter
 		static readonly Tuple<string, string>[] PossiblePartitionStates =
 		[
 			new Tuple<string, string>("partitionArmed", "#StatusArmed"),
-			new Tuple<string, string>("partitionDisarmed", ""),
-			new Tuple<string, string>("partitionInAlarm", "#StatusAlarmed"),
-			new Tuple<string, string>("partitionReady", "#StatusReady")
+			new Tuple<string, string>("chimeModeOn", ""),
 		];
 
 		static readonly Tuple<string, string>[] PossibleOutputStates =

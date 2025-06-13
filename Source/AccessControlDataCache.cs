@@ -214,9 +214,7 @@ namespace AccessControlAdapterSample
         static readonly Tuple<string, string>[] PossiblePartitionStates =
         [
             new Tuple<string, string>("partitionArmed", "#StatusArmed"),
-            new Tuple<string, string>("partitionDisarmed", ""),
-            new Tuple<string, string>("partitionInAlarm", "#StatusAlarmed"),
-            new Tuple<string, string>("partitionReady", "#StatusReady")
+            new Tuple<string, string>("chimeModeOn", ""),
         ];
 
         static readonly Tuple<string, string>[] PossibleOutputStates =

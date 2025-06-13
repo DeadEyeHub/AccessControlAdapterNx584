@@ -4,13 +4,17 @@ namespace AccessControlAdapterSample.AccessControlData
 {
 	class PartitionData
 	{
-		[JsonProperty("id")]
-		public string? Id { get; set; }
+        [JsonProperty("number")]
+        public int Number { get; set; }
+        
+        [JsonProperty("condition_flags")]
+        public HashSet<string>? ConditionFlags { get; set; }
 
-		[JsonProperty("title")]
-		public string? Title { get; set; }
+        [JsonProperty("armed")]
+        public bool Armed { get; set; }
 
-		[JsonProperty("states")]
-		public string[] States { get; set; } = [];
-	}
+        [JsonProperty("last_user")]
+        public int user { get; set; }
+
+    }
 }
